@@ -1,0 +1,59 @@
+/* Placeholder styles; the real visual system arrives in prompt 08 (design pass). */
+:root {
+  --ink: #1b2430;
+  --muted: #5b6573;
+  --paper: #f7f5f0;
+  --navy: #1f3a5f;
+  --amber: #f2b84b;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+}
+
+.shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.masthead h1 {
+  margin: 0;
+  color: var(--navy);
+}
+
+.tagline {
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+.mode-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.mode-badge--replay {
+  color: #7a5200;
+  background: #fdf1d6;
+}
+
+.mode-badge--live {
+  color: #0f5132;
+  background: #d9f2e4;
+}
