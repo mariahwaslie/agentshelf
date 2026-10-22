@@ -35,6 +35,27 @@ def test_secret_query_params_are_ignored() -> None:
     assert normalize_query({"api_key": "secret", "q": "boots"}) == [("q", "boots")]
 
 
+def test_repeated_query_params_are_kept() -> None:
+    one = fixture_key("channel3", "GET /v1/search", query=[("tag", "boots")])
+    two = fixture_key("channel3", "GET /v1/search", query=[("tag", "boots"), ("tag", "wide")])
+    assert one != two
+
+
+def test_volatile_body_fields_can_be_ignored() -> None:
+    first = {"purchase_units": [{"amount": 11900, "invoice_id": "inv-1730000000"}]}
+    second = {"purchase_units": [{"amount": 11900, "invoice_id": "inv-1730000999"}]}
+    assert fixture_key("paypal", ORDERS, body=first) != fixture_key("paypal", ORDERS, body=second)
+    assert fixture_key("paypal", ORDERS, body=first, ignore_fields={"invoice_id"}) == fixture_key(
+        "paypal", ORDERS, body=second, ignore_fields={"invoice_id"}
+    )
+
+
+def test_secrets_in_form_bodies_do_not_affect_the_key() -> None:
+    assert normalize_body(b"grant_type=client_credentials&client_secret=abc") == [
+        ["grant_type", "client_credentials"]
+    ]
+
+
 def test_query_order_does_not_matter() -> None:
     first = fixture_key("channel3", "GET /v1/search", query={"q": "boots", "limit": "10"})
     second = fixture_key("channel3", "GET /v1/search", query={"limit": "10", "q": "boots"})

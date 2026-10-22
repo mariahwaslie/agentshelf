@@ -21,6 +21,6 @@ def configure_logging(*, json_logs: bool) -> None:
     )
 
 
-def get_logger(name: str) -> structlog.stdlib.BoundLogger:
-    logger: structlog.stdlib.BoundLogger = structlog.get_logger(name)
+def get_logger(name: str) -> structlog.typing.FilteringBoundLogger:
+    logger: structlog.typing.FilteringBoundLogger = structlog.get_logger(name)
     return logger

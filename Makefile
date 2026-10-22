@@ -12,6 +12,7 @@ help: ## List commands
 setup: ## Install backend + frontend deps and pre-commit hooks
 	cd $(BACKEND) && uv sync
 	cd $(FRONTEND) && npm ci
+	uv tool install --quiet pre-commit
 	uv tool run pre-commit install
 
 dev: ## Run backend (reload) and frontend dev server
@@ -28,7 +29,7 @@ typecheck: ## Static types (mypy strict on core, tsc strict)
 	cd $(FRONTEND) && npm run typecheck
 
 test: ## Unit + contract tests with coverage on core (replay mode, no network)
-	cd $(BACKEND) && APP_MODE=replay uv run pytest tests/unit tests/contract --cov=app/domain --cov=app/clients --cov=app/cache --cov-fail-under=80
+	cd $(BACKEND) && APP_MODE=replay uv run pytest tests/unit tests/contract --cov=app/domain --cov=app/clients --cov=app/cache --cov=app/trace --cov=app/api --cov-fail-under=80
 
 golden: ## Golden demo path test (replay mode)
 	cd $(BACKEND) && APP_MODE=replay uv run pytest tests/golden -v
@@ -56,8 +57,8 @@ eval: ## Reproduce the numbers in docs/EVALUATION.md
 
 demo: ## Run the full app in replay mode — no keys needed
 	cd $(FRONTEND) && npm run build
+	@echo "Open http://localhost:8000 (Ctrl+C to stop)"
 	cd $(BACKEND) && APP_MODE=replay DISPLAY_ANONYMIZED=true $(UVICORN) --port 8000
-	@echo "Open http://localhost:8000"
 
 keys-check: ## Report which keys are present in .env (never prints values)
 	cd $(BACKEND) && uv run python -m app.scripts.keys_check

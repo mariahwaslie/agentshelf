@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     channel3_api_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
     llm_model: str | None = None
-    ag_license_key: SecretStr | None = None
+    # Not a SecretStr: AG Grid Enterprise license keys ship to the browser by design.
+    ag_license_key: str | None = None
 
     feature_studio_agent: bool = True
     feature_ag_studio: bool = True
@@ -44,6 +45,8 @@ class Settings(BaseSettings):
 
     data_dir: Path = REPO_ROOT / "data"
     frontend_dist: Path = REPO_ROOT / "frontend" / "dist"
+    var_dir: Path = REPO_ROOT / "backend" / "var"
+    """Writable runtime state (the SQLite file); git-ignored; owned by the app user in Docker."""
 
     @field_validator("paypal_base_url")
     @classmethod

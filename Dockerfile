@@ -24,7 +24,8 @@ COPY backend/app ./app
 COPY data /srv/data
 COPY --from=frontend /srv/frontend/dist /srv/frontend/dist
 
-RUN useradd --create-home --uid 10001 app
+# The app user may write only to backend/var (SQLite lives there; see settings.var_dir).
+RUN useradd --create-home --uid 10001 app && mkdir -p /srv/backend/var && chown app /srv/backend/var
 USER app
 
 # Replay mode by default: judges can run the image with no keys. Render overrides via env.

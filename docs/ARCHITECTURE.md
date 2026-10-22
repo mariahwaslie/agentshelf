@@ -29,7 +29,7 @@
 | `cache/` | Fixture key scheme (`keys.py`) and store interface (`store.py`); transport in prompt 02. |
 | `trace/` | Records a `TraceEvent` per external call; `GET /api/trace?after=` serves them. |
 | `db/` | SQLAlchemy tables, seed, repositories; mapped to `models.py` contracts. |
-| `models.py` | API contracts (fixed; see `docs/contracts.md`). |
+| `models/` | API contracts and their invariants (fixed; see `docs/contracts.md`). |
 | `settings.py` | Env-only config; refuses a non-sandbox PayPal URL. |
 
 ## Key flows
@@ -38,11 +38,11 @@
 3. **Shopper:** request → ranker picks → LLM explanation → Orders v2 create → JS SDK approval → capture → webhook (or poll) → tag `source=agent`.
 
 ## Modes
-- `APP_MODE=live`: real calls. Fixtures are reused when present (`cache_first`), `RECORD=1` refreshes them. Writes always go live.
+- `APP_MODE=live`: real calls. Every PayPal call goes live; deterministic reads (Channel3, LLM, embeddings) may reuse a recording, labeled as such (`CallProvenance`, trace `cache=hit`). `RECORD=1` refreshes recordings. OAuth tokens are never recorded.
 - `APP_MODE=replay`: fixtures only; no keys needed; a missing fixture is an error, never a silent live call; "Replay" badge visible.
 
 ## Concurrency
-Sync route handlers and sync `httpx.Client`; FastAPI runs them in its threadpool. The only async route is the PayPal webhook (it needs the raw body for signature verification). The API Trace panel polls about once a second, which is sturdier on Render's free tier than SSE or WebSockets.
+Sync route handlers and sync `httpx.Client`; FastAPI runs them in its threadpool. The PayPal webhook reads its raw body through a small async dependency and stays sync itself, so verifying the signature never blocks the event loop. The API Trace panel polls about once a second, which is sturdier on Render's free tier than SSE or WebSockets.
 
 ## Tech choices
 Backend: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0/SQLite, httpx, structlog, scikit-learn, fastembed, uv.

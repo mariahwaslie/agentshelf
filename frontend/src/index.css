@@ -40,6 +40,17 @@ body {
   color: var(--muted);
 }
 
+.mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mode-hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .mode-badge {
   padding: 4px 10px;
   border-radius: 999px;

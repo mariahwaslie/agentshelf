@@ -9,6 +9,7 @@ from uuid import uuid4
 
 import structlog
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
@@ -53,7 +54,13 @@ async def _request_context(request: Request, call_next: RequestResponseEndpoint)
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(request_id=request_id)
     started = time.perf_counter()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        # The one deliberate catch-all: the outermost boundary turns any crash into a logged,
+        # correlatable 500 instead of a bare one without a request ID.
+        log.exception("request_failed", method=request.method, path=request.url.path)
+        response = JSONResponse({"detail": "Internal server error"}, status_code=500)
     response.headers["X-Request-ID"] = request_id
     if request.url.path not in _QUIET_PATHS:
         log.info(

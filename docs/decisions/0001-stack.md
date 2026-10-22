@@ -31,6 +31,8 @@ Python 3.12 FastAPI backend serving a React + Vite + TypeScript frontend from on
 - **TypeScript 5.9, not 6.0.** The Vite 8 template ships TS 6.0, but openapi-typescript 7.13 (latest) declares support for TS 5 only. Pinning 5.9 avoids forcing peer dependencies.
 - **ESLint + typescript-eslint (strict, type-checked), not oxlint.** The template now defaults to oxlint; `docs/STANDARDS.md` specifies ESLint + Prettier.
 - **httpx stays; httpx2 deferred.** Starlette 1.9's TestClient prefers `httpx2` (a successor to httpx published under the Pydantic GitHub org) and warns on httpx. Adding it was blocked pending vetting, so the project stays on httpx 0.28.1 and the test config ignores that one warning. Revisit if Mariah approves httpx2 after checking it.
+- **Per-call cache policy (from `/review`).** One global "cache first in live mode" policy would have served stale PayPal order status to the polling fallback and written OAuth tokens into git-tracked fixtures. Every PayPal call is now `always_live`, credentials are `never_record`, and fixtures redact secrets on construction (`docs/contracts.md`, Record/replay).
+- **Contracts enforce the project rules (from `/review`).** `pick == ranked[0]`, grounded-needs-spans, ungrounded-needs-merchant-value, and agent-revenue-needs-completed-capture are model validators, not conventions. `app/models.py` became the `app/models/` package to stay under the 400-line module limit.
 - **CI on Node 24-era action majors** (`checkout@v7`, `setup-node@v7`, `setup-python@v7`, `setup-uv@v10`, `gitleaks-action@v3`). Node 20 actions stopped working on GitHub runners on Sept 16, 2026.
 
 ## Consequences

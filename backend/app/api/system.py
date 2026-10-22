@@ -23,6 +23,7 @@ def get_config(settings: SettingsDep) -> AppConfig:
         display_anonymized=settings.display_anonymized,
         features=settings.features,
         paypal_client_id=settings.paypal_client_id,
+        ag_license_key=settings.ag_license_key,
     )
 
 

@@ -81,9 +81,9 @@ User accounts/login, multi-merchant support, real payments (sandbox only), mobil
 
 If a checkpoint slips by more than a day, apply the cut list before continuing.
 
-## Repo map (target — confirmed in prompt 00)
+## Repo map (confirmed in prompt 00)
 ```
-backend/app/        FastAPI app: api/, clients/, domain/, cache/, trace/, models.py, settings.py
+backend/app/        FastAPI app: api/, clients/, domain/, cache/, trace/, db/, models/, settings.py
 backend/tests/      unit/, contract/, integration/, golden/
 frontend/src/       React + Vite + TS: pages/, components/, api/ (generated types), trace/
 data/               seed catalog, query sets (train/held-out), recorded fixtures

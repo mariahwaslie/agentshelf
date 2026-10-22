@@ -445,7 +445,8 @@ export interface paths {
         put?: never;
         /**
          * Paypal Webhook
-         * @description Async because signature verification needs the raw request body.
+         * @description Sync on purpose: verification calls PayPal through the sync client in FastAPI's threadpool,
+         *     so a slow PayPal response never blocks the event loop.
          */
         post: operations["paypal_webhook"];
         delete?: never;
@@ -478,6 +479,7 @@ export interface components {
             amount: components["schemas"]["Money"];
             /** Capture Id */
             capture_id?: string | null;
+            capture_status?: components["schemas"]["CaptureStatus"] | null;
             /** Captured At */
             captured_at?: string | null;
             confirmed_by?: components["schemas"]["Confirmation"] | null;
@@ -503,9 +505,13 @@ export interface components {
         };
         /**
          * AppConfig
-         * @description What the browser needs at startup. The PayPal client ID is public by design (JS SDK).
+         * @description What the browser needs at startup. Both IDs below are public by design (they ship to the
+         *     browser in any PayPal JS SDK / AG Grid Enterprise page); the PayPal secret never leaves the
+         *     server.
          */
         AppConfig: {
+            /** Ag License Key */
+            ag_license_key?: string | null;
             /** Display Anonymized */
             display_anonymized: boolean;
             features: components["schemas"]["FeatureFlags"];
@@ -543,6 +549,13 @@ export interface components {
         /** ApprovalRequest */
         ApprovalRequest: {
             decision: components["schemas"]["ApprovalDecision"];
+            /**
+             * Merchant Values
+             * @description Merchant-typed values for 'needs merchant input' proposals, by ID.
+             */
+            merchant_values?: {
+                [key: string]: string | number | boolean | string[];
+            };
             /** Proposal Ids */
             proposal_ids: string[];
         };
@@ -583,6 +596,7 @@ export interface components {
             n_queries: number;
             /** Product Scores */
             product_scores?: components["schemas"]["ProductScore"][];
+            provenance: components["schemas"]["CallProvenance"];
             /** Recall At K */
             recall_at_k: number;
             /** Share Of Shelf */
@@ -600,7 +614,37 @@ export interface components {
          * CacheOutcome
          * @enum {string}
          */
-        CacheOutcome: "hit" | "miss" | "recorded" | "replayed";
+        CacheOutcome: "hit" | "miss" | "recorded" | "replayed" | "live";
+        /**
+         * CallProvenance
+         * @description Where a result's external data came from, so reused recordings are never shown as live.
+         */
+        CallProvenance: {
+            /**
+             * Live Calls
+             * @default 0
+             */
+            live_calls: number;
+            /** Oldest Recording At */
+            oldest_recording_at?: string | null;
+            /**
+             * Replayed Calls
+             * @default 0
+             */
+            replayed_calls: number;
+            /**
+             * Reused Recordings
+             * @description Live mode served a recording.
+             * @default 0
+             */
+            reused_recordings: number;
+        };
+        /**
+         * CaptureStatus
+         * @description Mirrors PayPal capture statuses. An order can be COMPLETED while its capture is PENDING.
+         * @enum {string}
+         */
+        CaptureStatus: "COMPLETED" | "PENDING" | "DECLINED" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED";
         /** CategoryShare */
         CategoryShare: {
             /** Category */
@@ -610,10 +654,7 @@ export interface components {
         };
         /**
          * Competitor
-         * @description A live listing from Channel3.
-         *
-         *     When DISPLAY_ANONYMIZED is on, the server replaces brand with "Competitor A/B/C", scrubs the
-         *     brand from the title, and drops the URL, so real brands never reach the browser.
+         * @description A live listing from Channel3. Anonymization is applied server-side (docs/contracts.md).
          */
         Competitor: {
             /** Anonymized */
@@ -665,6 +706,11 @@ export interface components {
             /** Most Invisible */
             most_invisible: components["schemas"]["ProductScore"][];
             other_revenue: components["schemas"]["Money"];
+            /**
+             * Other Revenue Synthetic
+             * @description True while other_revenue comes from the seeded synthetic order history.
+             */
+            other_revenue_synthetic: boolean;
             /** Share By Category */
             share_by_category: components["schemas"]["CategoryShare"][];
             /** Visibility History */
@@ -681,6 +727,12 @@ export interface components {
             grounded: boolean;
             /** Id */
             id: string;
+            /**
+             * Merchant Supplied
+             * @description True when new_value was typed by the merchant on approval.
+             * @default false
+             */
+            merchant_supplied: boolean;
             /** New Value */
             new_value: string | number | boolean | string[];
             /** Old Value */
@@ -732,6 +784,9 @@ export interface components {
         /**
          * GroundingSpan
          * @description Exact source text a proposed value came from; the validator checks it against the product.
+         *
+         *     Offsets count Unicode code points (Python string indexing). The grid converts them before
+         *     slicing JavaScript strings, which count UTF-16 units.
          */
         GroundingSpan: {
             /** End */
@@ -811,10 +866,10 @@ export interface components {
         OrderSource: "agent";
         /**
          * OrderStatus
-         * @description Mirrors PayPal Orders v2 statuses.
+         * @description Mirrors PayPal Orders v2 order statuses.
          * @enum {string}
          */
-        OrderStatus: "CREATED" | "APPROVED" | "COMPLETED" | "VOIDED";
+        OrderStatus: "CREATED" | "SAVED" | "APPROVED" | "PAYER_ACTION_REQUIRED" | "VOIDED" | "COMPLETED";
         /** Product */
         Product: {
             attributes?: components["schemas"]["ProductAttributes"];
@@ -976,6 +1031,7 @@ export interface components {
             id: string;
             intent: components["schemas"]["ShopperIntent"];
             pick?: components["schemas"]["RankedItem"] | null;
+            provenance: components["schemas"]["CallProvenance"];
             /** Query */
             query: string;
             /** Ranked */
